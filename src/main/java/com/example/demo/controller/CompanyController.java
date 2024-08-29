@@ -2,8 +2,11 @@ package com.example.demo.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import com.example.demo.model.Company;
+import com.example.demo.model.User;
 import com.example.demo.service.CompanyService;
 
 import java.util.List;
@@ -16,9 +19,12 @@ public class CompanyController {
     @Autowired
     private CompanyService companyService;
 
-    @GetMapping("/account/{accountId}")
+    @GetMapping("/")
     public ResponseEntity<List<Company>> getAllCompaniesByAccount(@PathVariable Long accountId) {
-        List<Company> companies = companyService.getAllCompaniesByAccount(accountId);
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        User user = (User)auth.getPrincipal();
+
+        List<Company> companies = companyService.getAllCompaniesByAccount(user.getAccount().getId());
         return ResponseEntity.ok(companies);
     }
 

@@ -39,6 +39,11 @@ public class Company {
     @JsonBackReference
     private Account account;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "responsible_id")
+    @JsonBackReference
+    private User responsible;
+
     @Column(name = "created_at", nullable = false)
     @Temporal(TemporalType.TIMESTAMP)
     private Date createdAt;

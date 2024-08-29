@@ -2,8 +2,11 @@ package com.example.demo.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import com.example.demo.model.Contact;
+import com.example.demo.model.User;
 import com.example.demo.service.ContactService;
 
 import java.util.List;
@@ -16,9 +19,12 @@ public class ContactController {
     @Autowired
     private ContactService contactService;
 
-    @GetMapping("/account/{accountId}")
+    @GetMapping("/")
     public ResponseEntity<List<Contact>> getAllContactsByAccount(@PathVariable Long accountId) {
-        List<Contact> contacts = contactService.getAllContactsByAccount(accountId);
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        User user = (User)auth.getPrincipal();
+
+        List<Contact> contacts = contactService.getAllContactsByAccount(user.getAccount().getId());
         return ResponseEntity.ok(contacts);
     }
 

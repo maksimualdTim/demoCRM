@@ -3,7 +3,10 @@ package com.example.demo.controller;
 import java.time.Instant;
 import java.util.stream.Collectors;
 
+import org.apache.catalina.connector.Response;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
@@ -13,11 +16,14 @@ import org.springframework.security.oauth2.jwt.JwtClaimsSet;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
+import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.example.demo.service.UserServiceImpl;
+import com.example.demo.exceptions.UserExistsException;
+import com.example.demo.request.RegisterRequest;
+import com.example.demo.service.UserService;
 
 import lombok.Data;
 
@@ -35,12 +41,18 @@ public class AuthController {
 	private JwtDecoder decoder;
 
 	@Autowired
-	private UserServiceImpl userServiceImpl;
+	private UserService userServiceImpl;
 
 	@PostMapping("/register")
-	public String register(@RequestBody String entity) {
-		
-		return entity;
+	public ResponseEntity register(@RequestBody RegisterRequest request) {
+
+        try {
+            userServiceImpl.registerNewUser(request.getEmail(), request.getName());
+        } catch (UserExistsException e) {
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.CONFLICT);
+        }
+        
+		return new ResponseEntity<>("User registered successfully", HttpStatus.CREATED);
 	}
 	
 

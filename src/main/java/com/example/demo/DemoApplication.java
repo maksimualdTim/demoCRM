@@ -13,7 +13,7 @@ import com.example.demo.model.Account;
 import com.example.demo.model.Role;
 import com.example.demo.model.User;
 import com.example.demo.service.AccountService;
-import com.example.demo.service.UserServiceImpl;
+import com.example.demo.service.UserService;
 
 @SpringBootApplication
 public class DemoApplication {
@@ -28,7 +28,7 @@ public class DemoApplication {
     }
 
 	@Bean
-	CommandLineRunner run (UserServiceImpl userService, AccountService accountService) {
+	CommandLineRunner run (UserService userService, AccountService accountService) {
 		return args -> {
 
         Account account = accountService.createAccount("firstAccount");

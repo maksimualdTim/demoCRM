@@ -13,14 +13,14 @@ import com.example.demo.service.AccountService;
 import java.util.Optional;
 
 @RestController
-@RequestMapping("/api/accounts")
+@RequestMapping("/api/account")
 public class AccountController {
 
     @Autowired
     private AccountService accountService;
 
 
-    @GetMapping("/{id}")
+    @GetMapping("/")
     public ResponseEntity<Account> getAccount(@PathVariable Long id) {
         Optional<Account> account = accountService.getAccountById(id);
         return account.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());

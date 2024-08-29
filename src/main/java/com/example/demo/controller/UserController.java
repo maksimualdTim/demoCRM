@@ -3,16 +3,17 @@ package com.example.demo.controller;
 import java.net.URI;
 import java.util.List;
 
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import com.example.demo.model.Role;
 import com.example.demo.model.User;
-import com.example.demo.service.UserServiceImpl;
+import com.example.demo.response.ResponseUser;
+import com.example.demo.service.UserService;
 
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
@@ -26,18 +27,19 @@ import org.springframework.web.bind.annotation.RequestParam;
 @RequestMapping("/api")
 @RequiredArgsConstructor
 public class UserController {
-    private final UserServiceImpl userService;
+    private final UserService userService;
 
     public String getMethodName(@RequestParam String param) {
         return new String();
     }
 
     @GetMapping("/users")
-    public ResponseEntity<List<User>>getUsers () {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        System.out.println("User: " + auth.getName());
-        System.out.println("Authorities: " + auth.getAuthorities());
-        return ResponseEntity.ok().body(userService.getUsers());
+    public List<ResponseUser>getUsers (
+        @RequestParam(defaultValue = "0") int page,
+        @RequestParam(defaultValue = "50") int size
+    ) {
+        Pageable pageable = PageRequest.of(page, size);
+        return userService.getUsersResponse(pageable);
     }
 
     @PostMapping("/user/save")
