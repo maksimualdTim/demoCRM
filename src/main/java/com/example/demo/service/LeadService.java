@@ -4,17 +4,28 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import com.example.demo.model.Company;
+import com.example.demo.model.Contact;
 import com.example.demo.model.Lead;
+import com.example.demo.model.Pipeline;
 import com.example.demo.model.User;
+import com.example.demo.repository.CompanyRepository;
+import com.example.demo.repository.ContactRepository;
 import com.example.demo.repository.LeadRepository;
-import com.example.demo.request.CreateLeadRequest;
+import com.example.demo.request.LeadCreateRequest;
+import com.example.demo.response.CompanyResponse;
+import com.example.demo.response.ContactResponse;
 import com.example.demo.response.CustomFieldResponse;
-import com.example.demo.response.ResponseLead;
+import com.example.demo.response.LeadResponse;
 
 import java.util.Optional;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.stream.Collectors;
+
 @Service
 public class LeadService {
 
@@ -24,15 +35,65 @@ public class LeadService {
     @Autowired
     private UserService userService;
 
-    public Page<Lead> getAllLeadsByAccount(Long accountId, Pageable pageable) {
-        return leadRepository.findByAccountId(accountId, pageable);
+    @Autowired
+    private PipelineService pipelineService;
+
+    @Autowired
+    private ContactService contactService;
+
+    @Autowired 
+    private CompanyService companyService;
+
+    @Autowired
+    private ContactRepository contactRepository;
+
+    @Autowired 
+    private CompanyRepository companyRepository;
+
+    public Page<LeadResponse> getAllLeadsByAccount(Long accountId, Pageable pageable) {
+        Page<Lead> leads = leadRepository.findByAccountId(accountId, pageable);
+        return leads.map(this::toLeadResponse);
     }
 
     public Optional<Lead> getLeadById(Long id) {
         return leadRepository.findById(id);
     }
 
+    @Transactional
     public Lead createLead(Lead lead) {
+        if(lead.getPipeline() == null) {
+            Pipeline pipeline = pipelineService.getMainPipeline(userService.getCurrentUser().getAccount());
+            lead.setPipeline(pipeline);
+            lead.setStatus(pipeline.getStatuses().getFirst());
+        }
+
+        //TODO move to proper services
+        // TODO fix contacts & companies not link leads
+        if(lead.getCompany() != null) {
+            
+            Company company = lead.getCompany();
+            List<Lead> companyLeads = company.getLeads();
+            if(companyLeads == null) {
+                companyLeads = new ArrayList<Lead>();
+            }
+            companyLeads.add(lead);
+            company.setLeads(companyLeads);
+            company = companyRepository.save(company);
+        }
+
+        if(lead.getContacts() != null) {
+            List<Contact> contacts = lead.getContacts();
+            for (Contact contact : contacts) {
+                List<Lead> contactLeads = contact.getLeads();
+                if(contactLeads == null) {
+                    contactLeads = new ArrayList<Lead>();
+                }
+                contactLeads.add(lead);
+                contact.setLeads(contactLeads);
+            }
+            contacts = contactRepository.saveAll(contacts);
+        }
+
         return leadRepository.save(lead);
     }
 
@@ -40,27 +101,38 @@ public class LeadService {
         leadRepository.deleteById(id);
     }
 
-    public Lead toLead(CreateLeadRequest leadDto) {
+    public Lead toLead(LeadCreateRequest leadDto) {
         Lead lead = new Lead();
 
         User user = userService.getCurrentUser();
         
         lead.setName(leadDto.getName());
         lead.setAccount(user.getAccount());
+        lead.setPrice(leadDto.getPrice());
 
         if(leadDto.getResponsible_id() != null) {
             User responsible = new User();
             responsible.setId(leadDto.getResponsible_id());
             lead.setResponsible(responsible);
         } else {
-            lead.setResponsible(userService.getCurrentUser());
+            lead.setResponsible(user);
+        }
+
+        if(leadDto.getCompany() != null) {
+            Company company = companyService.createCompany(companyService.toCompany(leadDto.getCompany()));
+            lead.setCompany(company);
+        }
+
+        if(leadDto.getContacts() != null) {
+            List<Contact> contacts = contactService.saveAllContacts(leadDto.getContacts());
+            lead.setContacts(contacts);
         }
 
         return lead;
     }
 
-    public ResponseLead toResponseLead(Lead lead) {
-        ResponseLead responseLead = new ResponseLead();
+    public LeadResponse toLeadResponse(Lead lead) {
+        LeadResponse responseLead = new LeadResponse();
         responseLead.setAccount_id(lead.getAccount().getId());
         responseLead.setId(lead.getId());
         responseLead.setName(lead.getName());
@@ -69,31 +141,35 @@ public class LeadService {
         responseLead.setResponsible_id(lead.getResponsible().getId());
         responseLead.setStatus_id(lead.getStatus().getId());
         responseLead.setPipeline_id(lead.getPipeline().getId());
+        responseLead.setPrice(lead.getPrice());
 
-        List<CustomFieldResponse> customFields = lead.getCustomFields().stream()
+        CompanyResponse companyResponse = companyService.toCompanyResponse(lead.getCompany());
+        companyResponse.setShowLeads(false);
+        responseLead.setCompany(companyResponse);
+
+        List<Contact> contacts = lead.getContacts();
+        List<ContactResponse> contactResponses = contacts
+        .stream()
+        .map(contactService::toContactResponse)
+        .peek(contactResponse -> contactResponse.setShowLeads(false))
+        .collect(Collectors.toList());
+
+        responseLead.setContacts(contactResponses);
+
+        List<CustomFieldResponse> customFields = Optional.ofNullable(lead.getCustomFields())
+        .orElseGet(Collections::emptyList)
+        .stream()
         .map(field -> new CustomFieldResponse(
             field.getId(),
             field.getName(),
             field.getType(),
             field.getValue()
         ))
-        .toList();
+        .collect(Collectors.toList());
 
         responseLead.setCustom_fields_values(customFields);
 
         return responseLead;
-    }
-
-    public List<ResponseLead> getLeadsResponse(Pageable pageable) {
-        List<ResponseLead> list = new ArrayList<ResponseLead>();
-
-        Page<Lead> leads = getAllLeadsByAccount(userService.getCurrentUser().getAccount().getId(), pageable);
-
-        for (Lead lead : leads) {
-            list.add(toResponseLead(lead));
-        }
-
-        return list;
     }
 }
 

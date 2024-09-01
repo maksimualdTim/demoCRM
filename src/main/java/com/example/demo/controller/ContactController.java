@@ -1,15 +1,23 @@
 package com.example.demo.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PagedResourcesAssembler;
+import org.springframework.hateoas.EntityModel;
+import org.springframework.hateoas.PagedModel;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import com.example.demo.model.Contact;
 import com.example.demo.model.User;
+import com.example.demo.request.ContactCreateRequest;
+import com.example.demo.response.ContactResponse;
 import com.example.demo.service.ContactService;
+import com.example.demo.service.UserService;
 
-import java.util.List;
+import jakarta.validation.Valid;
+
 import java.util.Optional;
 
 @RestController
@@ -19,25 +27,40 @@ public class ContactController {
     @Autowired
     private ContactService contactService;
 
-    @GetMapping("/")
-    public ResponseEntity<List<Contact>> getAllContactsByAccount(@PathVariable Long accountId) {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        User user = (User)auth.getPrincipal();
+    @Autowired
+    UserService userService;
 
-        List<Contact> contacts = contactService.getAllContactsByAccount(user.getAccount().getId());
-        return ResponseEntity.ok(contacts);
+    @GetMapping
+    public ResponseEntity<PagedModel<EntityModel<ContactResponse>>> getAllContactsByAccount(
+        Pageable pageable,
+        PagedResourcesAssembler<ContactResponse> assembler
+    ) {
+        if (pageable.getPageSize() > 250) {
+            pageable = PageRequest.of(pageable.getPageNumber(), 250, pageable.getSort());
+        }
+
+        User user = userService.getCurrentUser();
+
+        Page<ContactResponse> contacts = contactService.getAllContactsByAccount(user.getAccount().getId(), pageable);
+        return ResponseEntity.ok(assembler.toModel(contacts));
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Contact> getContactById(@PathVariable Long id) {
-        Optional<Contact> contact = contactService.getContactById(id);
-        return contact.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
+    public ResponseEntity<ContactResponse> getContactById(@PathVariable Long id) {
+        Optional<Contact> contactOptional = contactService.getContactById(id);
+        if(contactOptional.isPresent()) {
+            Contact contact = contactOptional.get();
+            return ResponseEntity.ok(contactService.toContactResponse(contact));
+        }
+
+        return ResponseEntity.notFound().build();
     }
 
     @PostMapping
-    public ResponseEntity<Contact> createContact(@RequestBody Contact contact) {
+    public ResponseEntity<ContactResponse> createContact(@Valid @RequestBody ContactCreateRequest contactDto) {
+        Contact contact = contactService.toContact(contactDto);
         Contact createdContact = contactService.createContact(contact);
-        return ResponseEntity.ok(createdContact);
+        return ResponseEntity.ok(contactService.toContactResponse(createdContact));
     }
 
     @DeleteMapping("/{id}")

@@ -2,10 +2,14 @@ package com.example.demo.response;
 
 import java.util.Date;
 import java.util.List;
+
+import org.springframework.hateoas.server.core.Relation;
+
 import lombok.Data;
 
 @Data
-public class ResponseLead {
+@Relation(collectionRelation = "leads")
+public class LeadResponse {
     private Long id;
     private String name;
     private Integer price;
@@ -15,6 +19,9 @@ public class ResponseLead {
     private Date created_at;
     private Date updated_at;
     private Long account_id;
+
+    private List<ContactResponse> contacts;
+    private CompanyResponse company;
 
     private List<CustomFieldResponse> custom_fields_values;
 }

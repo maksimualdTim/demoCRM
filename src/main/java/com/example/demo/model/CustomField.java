@@ -25,17 +25,23 @@ public class CustomField {
     private Long id;
 
     @Column(name = "name", nullable = false)
-    private String name; // Название кастомного поля
+    private String name;
 
     @Column(name = "type", nullable = false)
-    private String type; // Тип кастомного поля (текст, число, дата и т.д.)
+    private String type;
 
-    @Column(name = "value")
-    private String value; // Значение кастомного поля, если оно связано с конкретным объектом
+    @Column(name = "field_value")
+    private String value; 
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "lead_id")
-    private Lead lead; // Связь с лидами, если кастомное поле связано с конкретным лидом
+    private Lead lead;
 
-    // Дополнительные поля и методы могут быть добавлены по необходимости
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "contact_id")
+    private Contact contact;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "company_id")
+    private Company company;
 }

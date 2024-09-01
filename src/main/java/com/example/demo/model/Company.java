@@ -3,6 +3,7 @@ package com.example.demo.model;
 import java.util.Date;
 import java.util.List;
 
+
 import com.fasterxml.jackson.annotation.JsonBackReference;
 
 import jakarta.persistence.CascadeType;
@@ -54,6 +55,9 @@ public class Company {
 
     @OneToMany(mappedBy = "company", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Lead> leads;
+
+    @OneToMany(mappedBy = "company", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<CustomField> customFields;
 
     @PrePersist
     protected void onCreate() {

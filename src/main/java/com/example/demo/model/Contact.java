@@ -3,6 +3,7 @@ package com.example.demo.model;
 import java.util.Date;
 import java.util.List;
 
+
 import com.fasterxml.jackson.annotation.JsonBackReference;
 
 import jakarta.persistence.CascadeType;
@@ -13,6 +14,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.PrePersist;
@@ -31,11 +33,8 @@ public class Contact {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "contact_name", nullable = false)
+    @Column(name = "contact_name")
     private String contactName;
-
-    @Column(name = "email", nullable = false)
-    private String email;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "account_id", nullable = false)
@@ -55,8 +54,12 @@ public class Contact {
     @Temporal(TemporalType.TIMESTAMP)
     private Date updatedAt;    
 
-    @OneToMany(mappedBy = "contact", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @ManyToMany(mappedBy = "contacts", fetch = FetchType.LAZY)
+    @JsonBackReference
     private List<Lead> leads;
+
+    @OneToMany(mappedBy = "contact", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<CustomField> customFields;
 
     @PrePersist
     protected void onCreate() {

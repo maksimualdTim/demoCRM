@@ -19,12 +19,15 @@ import org.springframework.stereotype.Service;
 
 import com.example.demo.exceptions.UserExistsException;
 import com.example.demo.model.Account;
+import com.example.demo.model.Pipeline;
+import com.example.demo.model.Status;
 import com.example.demo.model.Role;
 import com.example.demo.model.User;
 import com.example.demo.repository.AccountRepository;
+import com.example.demo.repository.PipelineRepository;
 import com.example.demo.repository.RoleRepository;
 import com.example.demo.repository.UserRepository;
-import com.example.demo.response.ResponseUser;
+import com.example.demo.response.UserResponse;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -39,6 +42,10 @@ public class UserService implements UserDetailsService {
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
     private final AccountRepository accountRepository;
+    private final PipelineService pipelineService;
+    private final PipelineRepository pipelineRepository;
+    private final StatusService statusService;
+    
 
     private final EmailService emailService;
 
@@ -115,23 +122,23 @@ public class UserService implements UserDetailsService {
         return user;
     }
 
-    public User toUser(ResponseUser userDto) {
+    public User toUser(UserResponse userDto) {
         User user = new User();
         user.setName(userDto.getName());
         user.setUsername(userDto.getUsername());
         return user;
     }
 
-    public ResponseUser toResponseDto (User user) {
-        ResponseUser userDto = new ResponseUser();
+    public UserResponse toResponseDto (User user) {
+        UserResponse userDto = new UserResponse();
         userDto.setName(user.getName());
         userDto.setUsername(user.getUsername());
         userDto.setRoles(user.getRoles());
         return userDto;
     }
 
-    public List<ResponseUser> getUsersResponse(Pageable pageable) {
-        List<ResponseUser> list = new ArrayList<>();
+    public List<UserResponse> getUsersResponse(Pageable pageable) {
+        List<UserResponse> list = new ArrayList<>();
         Page<User> users = getUsers(pageable);
     
         for (User user : users) {
@@ -154,10 +161,15 @@ public class UserService implements UserDetailsService {
 
         account = accountRepository.save(account);
 
+        Pipeline pipeline = pipelineService.createDefaultPipeline(account);
+        List<Status> statuses = statusService.createDefaultStatuses(pipeline);
+        pipeline.setStatuses(statuses);
+        pipelineRepository.save(pipeline);
+
         User user = new User();
         user.setUsername(email);
         user.setName(name);
-        user.setPassword(password);
+        user.setPassword(passwordEncoder.encode(password));
         user.setAccount(account);
 
         

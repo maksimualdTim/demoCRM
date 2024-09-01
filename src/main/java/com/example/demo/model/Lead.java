@@ -4,6 +4,7 @@ import java.util.Date;
 
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -13,6 +14,8 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinTable;
+import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.PrePersist;
@@ -22,7 +25,9 @@ import jakarta.persistence.Temporal;
 import jakarta.persistence.TemporalType;
 import lombok.Data;
 
+import java.util.Set;
 import java.util.List;
+
 @Entity
 @Table(name = "leads")
 @Data
@@ -40,14 +45,22 @@ public class Lead {
     @JsonBackReference
     private Account account;
 
+    
+    private Integer price;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "company_id")
     private Company company;
 
         
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "contact_id")
-    private Contact contact;
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+        name = "lead_contact",
+        joinColumns = @JoinColumn(name = "lead_id"),
+        inverseJoinColumns = @JoinColumn(name = "contact_id")
+    )
+    @JsonManagedReference
+    private List<Contact> contacts;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "responsible_id")
@@ -55,11 +68,11 @@ public class Lead {
     private User responsible;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "pipeline_id")
+    @JoinColumn(name = "pipeline_id", nullable = false)
     private Pipeline pipeline;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "status_id")
+    @JoinColumn(name = "status_id", nullable = false)
     private Status status;
 
     @OneToMany(mappedBy = "lead", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)

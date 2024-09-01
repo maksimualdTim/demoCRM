@@ -12,7 +12,7 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import com.example.demo.model.Role;
 import com.example.demo.model.User;
-import com.example.demo.response.ResponseUser;
+import com.example.demo.response.UserResponse;
 import com.example.demo.service.UserService;
 
 import lombok.Data;
@@ -34,7 +34,7 @@ public class UserController {
     }
 
     @GetMapping("/users")
-    public List<ResponseUser>getUsers (
+    public List<UserResponse>getUsers (
         @RequestParam(defaultValue = "0") int page,
         @RequestParam(defaultValue = "50") int size
     ) {

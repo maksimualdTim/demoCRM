@@ -1,5 +1,7 @@
 package com.example.demo.model;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -27,12 +29,17 @@ public class Status {
     @Column(name = "name", nullable = false)
     private String name;
 
-    @Column(name = "order")
+    @Column(name = "status_order")
     private Integer order; // Порядковый номер статуса в воронке
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "pipeline_id", nullable = false)
+    @JsonBackReference
     private Pipeline pipeline; // Воронка, к которой относится статус
 
-    // Дополнительные поля и методы могут быть добавлены по необходимости
+    public Status(String name, Pipeline pipeline, int order) {
+        this.pipeline = pipeline;
+        this.name = name;
+        this.order = order;
+    }
 }
