@@ -44,10 +44,11 @@ public class SecurityConfig{
 		http
 				.authorizeHttpRequests((authorize) -> authorize
 						.requestMatchers("/auth/**").permitAll()
+						.requestMatchers("/h2-console/**").permitAll()
 						.anyRequest()
 						.authenticated()
 				)
-				.csrf((csrf) -> csrf.ignoringRequestMatchers("/auth/**"))
+				.csrf((csrf) -> csrf.ignoringRequestMatchers("/auth/**").ignoringRequestMatchers("/h2-console/**"))
 				.httpBasic(Customizer.withDefaults())
 				.oauth2ResourceServer(OAuth2ResourceServerConfigurer::jwt)
 				.sessionManagement((session) -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
@@ -55,6 +56,7 @@ public class SecurityConfig{
 						.authenticationEntryPoint(new BearerTokenAuthenticationEntryPoint())
 						.accessDeniedHandler(new BearerTokenAccessDeniedHandler())
 				);
+		http.headers().frameOptions().disable();
 		// @formatter:on
 		return http.build();
 	}

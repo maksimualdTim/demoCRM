@@ -9,12 +9,12 @@ import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.PagedModel;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import com.example.demo.mapper.CompanyMapper;
 import com.example.demo.model.Company;
-import com.example.demo.model.User;
 import com.example.demo.request.CompanyCreateRequest;
 import com.example.demo.response.CompanyResponse;
 import com.example.demo.service.CompanyService;
-import com.example.demo.service.UserService;
 
 import java.util.Optional;
 
@@ -26,7 +26,7 @@ public class CompanyController {
     private CompanyService companyService;
 
     @Autowired
-    UserService userService;
+    private CompanyMapper companyMapper;
 
     @GetMapping
     public ResponseEntity<PagedModel<EntityModel<CompanyResponse>>> getAllCompaniesByAccount(
@@ -37,9 +37,7 @@ public class CompanyController {
             pageable = PageRequest.of(pageable.getPageNumber(), 250, pageable.getSort());
         }
 
-        User user = userService.getCurrentUser();
-
-        Page<CompanyResponse> companies = companyService.getAllCompaniesByAccount(user.getAccount().getId(), pageable);
+        Page<CompanyResponse> companies = companyService.getAllCompaniesForCurrentUser(pageable);
         return ResponseEntity.ok(assembler.toModel(companies));
     }
 
@@ -54,10 +52,10 @@ public class CompanyController {
     }
 
     @PostMapping
-    public ResponseEntity<Company> createCompany(@RequestBody CompanyCreateRequest companyDto) {
-        Company company = companyService.toCompany(companyDto);
+    public ResponseEntity<CompanyResponse> createCompany(@RequestBody CompanyCreateRequest companyDto) {
+        Company company = companyMapper.toModel(companyDto);
         Company createdCompany = companyService.createCompany(company);
-        return ResponseEntity.ok(createdCompany);
+        return ResponseEntity.ok(companyService.toCompanyResponse(createdCompany));
     }
 
     @DeleteMapping("/{id}")

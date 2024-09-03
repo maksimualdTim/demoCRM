@@ -23,15 +23,15 @@ public class ContactResponse {
     private String name;
     private Long responsible_id;
     @JsonInclude(Include.NON_NULL)
-    private List<Lead> leads;
+    private List<LeadResponse> leads;
     private Date created_at;
     private Date updated_at;
     private List<CustomFieldResponse> custom_fields_values;
 
-    public List<Lead> getLeads() {
+    public List<LeadResponse> getLeads() {
         if(isShowLeads) {
             if(leads == null)
-                leads = new ArrayList<Lead>();
+                leads = new ArrayList<LeadResponse>();
             return leads;
         }
         return null;

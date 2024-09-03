@@ -5,7 +5,6 @@ import java.util.List;
 
 import org.springframework.hateoas.server.core.Relation;
 
-import com.example.demo.model.Lead;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
@@ -24,15 +23,15 @@ public class CompanyResponse {
     private String name;
     private Long responsible_id;
     @JsonInclude(Include.NON_NULL)
-    private List<Lead> leads; 
+    private List<LeadResponse> leads; 
     private Date created_at;
     private Date updated_at;
     private List<CustomFieldResponse> custom_fields_values;
 
-    public List<Lead> getLeads() {
+    public List<LeadResponse> getLeads() {
         if(isShowLeads) {
             if(leads == null)
-                leads = new ArrayList<Lead>();
+                leads = new ArrayList<LeadResponse>();
             return leads;
         }
         return null;

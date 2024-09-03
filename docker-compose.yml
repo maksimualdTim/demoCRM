@@ -5,7 +5,7 @@ services:
     environment:
       POSTGRES_USER: demoCRM
       POSTGRES_PASSWORD: demoCRM_password
-      POSTGRES_DB: postgres
+      POSTGRES_DB: demoCRM
     ports:
       - "5432:5432"
     volumes:
@@ -22,16 +22,16 @@ services:
     depends_on:
       - postgres
     
-  app:
-    build: .
-    container_name: app
-    environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/demoCRM
-      SPRING_DATASOURCE_USERNAME: demoCRM
-      SPRING_DATASOURCE_PASSWORD: demoCRM_password
-    ports:
-      - "8080:8080"
-    depends_on:
-      - postgres
+  # app:
+  #   build: .
+  #   container_name: app
+  #   environment:
+  #     SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/demoCRM
+  #     SPRING_DATASOURCE_USERNAME: demoCRM
+  #     SPRING_DATASOURCE_PASSWORD: demoCRM_password
+  #   ports:
+  #     - "8080:8080"
+  #   depends_on:
+  #     - postgres
 volumes:
   postgres_data:

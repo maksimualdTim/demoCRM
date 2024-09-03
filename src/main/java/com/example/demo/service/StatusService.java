@@ -25,7 +25,6 @@ public class StatusService {
             Status status = new Status(statusName, pipeline, i);
             statuses.add(status);
         }
-        statusRepository.saveAll(statuses);
-        return statuses;
+        return statusRepository.saveAll(statuses);
     }
 }

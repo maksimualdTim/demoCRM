@@ -6,24 +6,33 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.example.demo.mapper.CompanyMapper;
+import com.example.demo.mapper.ContactMapper;
+import com.example.demo.mapper.LeadMapper;
 import com.example.demo.model.Company;
 import com.example.demo.model.Contact;
 import com.example.demo.model.Lead;
 import com.example.demo.model.Pipeline;
+import com.example.demo.model.Tag;
 import com.example.demo.model.User;
 import com.example.demo.repository.CompanyRepository;
 import com.example.demo.repository.ContactRepository;
 import com.example.demo.repository.LeadRepository;
+import com.example.demo.repository.TagRespository;
+import com.example.demo.request.ContactCreateRequest;
 import com.example.demo.request.LeadCreateRequest;
+import com.example.demo.request.TagCreateRequest;
 import com.example.demo.response.CompanyResponse;
 import com.example.demo.response.ContactResponse;
 import com.example.demo.response.CustomFieldResponse;
 import com.example.demo.response.LeadResponse;
 
 import java.util.Optional;
+import java.util.Set;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.stream.Collectors;
 
 @Service
@@ -50,13 +59,33 @@ public class LeadService {
     @Autowired 
     private CompanyRepository companyRepository;
 
-    public Page<LeadResponse> getAllLeadsByAccount(Long accountId, Pageable pageable) {
-        Page<Lead> leads = leadRepository.findByAccountId(accountId, pageable);
+    @Autowired
+    private TagRespository tagRespository;
+
+    @Autowired
+    private TagService tagService;
+
+    @Autowired
+    private LeadMapper leadMapper;
+
+    @Autowired
+    private ContactMapper contactMapper;
+
+    @Autowired
+    private CompanyMapper companyMapper;
+
+    public Page<LeadResponse> getAllLeadsForCurrentUser(Pageable pageable) {
+        Page<Lead> leads = leadRepository.findByAccountId(userService.getCurrentUser().getAccount().getId(), pageable);
         return leads.map(this::toLeadResponse);
     }
 
-    public Optional<Lead> getLeadById(Long id) {
-        return leadRepository.findById(id);
+    public LeadResponse getLeadResponseById(Long id) {
+        Optional<Lead> leadOptional = leadRepository.findById(id);
+        if (!leadOptional.isPresent())
+            return null;
+
+        Lead lead = leadOptional.get();
+        return toLeadResponse(lead);
     }
 
     @Transactional
@@ -101,75 +130,92 @@ public class LeadService {
         leadRepository.deleteById(id);
     }
 
-    public Lead toLead(LeadCreateRequest leadDto) {
-        Lead lead = new Lead();
-
-        User user = userService.getCurrentUser();
-        
-        lead.setName(leadDto.getName());
-        lead.setAccount(user.getAccount());
-        lead.setPrice(leadDto.getPrice());
-
-        if(leadDto.getResponsible_id() != null) {
-            User responsible = new User();
-            responsible.setId(leadDto.getResponsible_id());
-            lead.setResponsible(responsible);
-        } else {
-            lead.setResponsible(user);
-        }
+    public Lead createLeadFromLeadRequest(LeadCreateRequest leadDto) {
+        Lead lead = leadMapper.toModel(leadDto);
 
         if(leadDto.getCompany() != null) {
-            Company company = companyService.createCompany(companyService.toCompany(leadDto.getCompany()));
+            Company company = companyService.createCompany(companyMapper.toModel(leadDto.getCompany()));
             lead.setCompany(company);
         }
 
         if(leadDto.getContacts() != null) {
-            List<Contact> contacts = contactService.saveAllContacts(leadDto.getContacts());
-            lead.setContacts(contacts);
+            List<ContactCreateRequest> contacts = leadDto.getContacts();
+            lead.setContacts(contactService.saveAllContacts(contacts.stream().map(contactMapper::toModel).collect(Collectors.toList())));
         }
 
-        return lead;
+        // if(leadDto.getTags() != null) {
+        //     Set<Tag> tags = new HashSet<>();
+        //     for (TagCreateRequest tagRequest : leadDto.getTags()) {
+        //         Tag tag = tagRespository.findByNameAndAccount(tagRequest.getName(), user.getAccount()).orElseGet(() -> {
+        //             Tag newTag = new Tag();
+        //             newTag.setName(tagRequest.getName());
+        //             newTag.setAccount(user.getAccount());
+        //             return tagRespository.save(newTag);
+        //         });
+        //         tags.add(tag);
+        //     }
+        //     lead.setTags(tags);
+        // }
+
+        return createLead(lead);
     }
 
-    public LeadResponse toLeadResponse(Lead lead) {
-        LeadResponse responseLead = new LeadResponse();
-        responseLead.setAccount_id(lead.getAccount().getId());
-        responseLead.setId(lead.getId());
-        responseLead.setName(lead.getName());
-        responseLead.setCreated_at(lead.getCreatedAt());
-        responseLead.setUpdated_at(lead.getUpdatedAt());
-        responseLead.setResponsible_id(lead.getResponsible().getId());
-        responseLead.setStatus_id(lead.getStatus().getId());
-        responseLead.setPipeline_id(lead.getPipeline().getId());
-        responseLead.setPrice(lead.getPrice());
+    // public LeadResponse toLeadResponse(Lead lead) {
+    //     LeadResponse responseLead = new LeadResponse();
+    //     responseLead.setAccount_id(lead.getAccount().getId());
+    //     responseLead.setId(lead.getId());
+    //     responseLead.setName(lead.getName());
+    //     responseLead.setCreated_at(lead.getCreatedAt());
+    //     responseLead.setUpdated_at(lead.getUpdatedAt());
+    //     responseLead.setResponsible_id(lead.getResponsible().getId());
+    //     responseLead.setStatus_id(lead.getStatus().getId());
+    //     responseLead.setPipeline_id(lead.getPipeline().getId());
+    //     responseLead.setPrice(lead.getPrice());
+    //     responseLead.setTags(lead.getTags().stream().map(tagService::toTagResponse).collect(Collectors.toSet()));
 
-        CompanyResponse companyResponse = companyService.toCompanyResponse(lead.getCompany());
-        companyResponse.setShowLeads(false);
-        responseLead.setCompany(companyResponse);
+    //     CompanyResponse companyResponse = companyService.toCompanyResponse(lead.getCompany());
+    //     companyResponse.setShowLeads(false);
+    //     responseLead.setCompany(companyResponse);
 
-        List<Contact> contacts = lead.getContacts();
-        List<ContactResponse> contactResponses = contacts
-        .stream()
-        .map(contactService::toContactResponse)
-        .peek(contactResponse -> contactResponse.setShowLeads(false))
-        .collect(Collectors.toList());
+    //     List<Contact> contacts = lead.getContacts();
+    //     List<ContactResponse> contactResponses = contacts
+    //     .stream()
+    //     .map(contactService::toContactResponse)
+    //     .peek(contactResponse -> contactResponse.setShowLeads(false))
+    //     .collect(Collectors.toList());
 
-        responseLead.setContacts(contactResponses);
+    //     responseLead.setContacts(contactResponses);
 
-        List<CustomFieldResponse> customFields = Optional.ofNullable(lead.getCustomFields())
-        .orElseGet(Collections::emptyList)
-        .stream()
-        .map(field -> new CustomFieldResponse(
-            field.getId(),
-            field.getName(),
-            field.getType(),
-            field.getValue()
-        ))
-        .collect(Collectors.toList());
+    //     List<CustomFieldResponse> customFields = Optional.ofNullable(lead.getCustomFields())
+    //     .orElseGet(Collections::emptyList)
+    //     .stream()
+    //     .map(field -> new CustomFieldResponse(
+    //         field.getId(),
+    //         field.getName(),
+    //         field.getType(),
+    //         field.getValue()
+    //     ))
+    //     .collect(Collectors.toList());
 
-        responseLead.setCustom_fields_values(customFields);
+    //     responseLead.setCustom_fields_values(customFields);
 
-        return responseLead;
+    //     return responseLead;
+    // }
+
+    public LeadResponse toLeadResponse (Lead lead) {
+        LeadResponse leadResponse = leadMapper.toBasicResponse(lead);
+
+        List<ContactResponse> contacts = contactMapper.toBasicResponse(lead.getContacts());
+        CompanyResponse company = companyMapper.toBasicResponse(lead.getCompany());
+        company.setShowLeads(false);
+        contacts = contacts.stream()
+            .peek(contact -> contact.setShowLeads(false))
+            .collect(Collectors.toList());
+
+        leadResponse.setContacts(contacts);
+        leadResponse.setCompany(company);
+
+        return leadResponse;
     }
 }
 

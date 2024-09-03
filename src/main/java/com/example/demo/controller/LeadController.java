@@ -14,19 +14,11 @@ import org.springframework.web.bind.annotation.*;
 
 import com.example.demo.model.Contact;
 import com.example.demo.model.Lead;
-import com.example.demo.model.User;
 import com.example.demo.request.LeadCreateRequest;
-import com.example.demo.response.CompanyResponse;
-import com.example.demo.response.ContactResponse;
 import com.example.demo.response.LeadResponse;
-import com.example.demo.service.CompanyService;
-import com.example.demo.service.ContactService;
 import com.example.demo.service.LeadService;
-import com.example.demo.service.UserService;
 
 import jakarta.validation.Valid;
-
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/leads")
@@ -36,17 +28,8 @@ public class LeadController {
     private LeadService leadService;
 
 
-    @Autowired
-    UserService userService;
-
-    @Autowired
-    ContactService contactService;
-
-    @Autowired
-    CompanyService companyService;
-
     @GetMapping
-    public ResponseEntity<PagedModel<EntityModel<LeadResponse>>> getAllLeadsByAccount(
+    public ResponseEntity<PagedModel<EntityModel<LeadResponse>>> getAllLeads(
         Pageable pageable,
         PagedResourcesAssembler<LeadResponse> assembler) {
 
@@ -54,26 +37,23 @@ public class LeadController {
             pageable = PageRequest.of(pageable.getPageNumber(), 250, pageable.getSort());
         }    
 
-        User user = userService.getCurrentUser();
-
-        Page<LeadResponse> leads = leadService.getAllLeadsByAccount(user.getAccount().getId(), pageable);
+        Page<LeadResponse> leads = leadService.getAllLeadsForCurrentUser(pageable);
         
         return ResponseEntity.ok(assembler.toModel(leads));
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<LeadResponse> getLeadById(@PathVariable Long id) {
-        Optional<Lead> leadOptional = leadService.getLeadById(id);
-        if(leadOptional.isPresent()) {
-            Lead lead = leadOptional.get();
-            return ResponseEntity.ok(leadService.toLeadResponse(lead));
+        LeadResponse leadResponse = leadService.getLeadResponseById(id);
+        if(leadResponse != null) {
+            return ResponseEntity.ok(leadResponse);
         }
         return ResponseEntity.notFound().build();
     }
 
     @PostMapping
     public ResponseEntity<EntityModel<LeadResponse>> createLead(@Valid @RequestBody LeadCreateRequest leadCreateRequest) {
-        Lead lead = leadService.createLead(leadService.toLead(leadCreateRequest));
+        Lead lead = leadService.createLeadFromLeadRequest(leadCreateRequest);
 
         // Создание EntityModel для возвращаемого объекта Lead
         EntityModel<LeadResponse> leadResource = EntityModel.of(leadService.toLeadResponse(lead));
@@ -81,31 +61,17 @@ public class LeadController {
 
         // Добавление ссылок на связанные сущности
         if (lead.getCompany() != null) {
-            CompanyResponse companyResponse = companyService.toCompanyResponse(lead.getCompany());
-            companyResponse.setShowLeads(false);
-            EntityModel<CompanyResponse> companyResource = EntityModel.of(companyResponse);
-            companyResource.add(WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(CompanyController.class).getCompanyById(lead.getCompany().getId())).withSelfRel());
             leadResource.add(WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(CompanyController.class).getCompanyById(lead.getCompany().getId())).withRel("company"));
         }
 
         if (lead.getContacts() != null) {
             for (Contact contact : lead.getContacts()) {
-                ContactResponse contactResponse = contactService.toContactResponse(contact);
-                contactResponse.setShowLeads(false);
-                EntityModel<ContactResponse> contactResource = EntityModel.of(contactResponse);
-                contactResource.add(WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(ContactController.class).getContactById(contact.getId())).withSelfRel());
                 leadResource.add(WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(ContactController.class).getContactById(contact.getId())).withRel("contacts"));
             }
         }
 
         return new ResponseEntity<>(leadResource, HttpStatus.CREATED);
     }
-    // @PostMapping
-    // public ResponseEntity<LeadResponse> createLead(@Valid @RequestBody LeadCreateRequest leadDto) {        
-    //     Lead lead = leadService.toLead(leadDto);
-    //     Lead createdLead = leadService.createLead(lead, null, null);
-    //     return ResponseEntity.ok(leadService.toLeadResponse(createdLead));
-    // }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteLead(@PathVariable Long id) {

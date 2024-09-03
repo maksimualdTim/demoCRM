@@ -1,6 +1,7 @@
 package com.example.demo;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
@@ -8,9 +9,14 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 
 import com.example.demo.model.Account;
+import com.example.demo.model.Pipeline;
 import com.example.demo.model.Role;
+import com.example.demo.model.Status;
 import com.example.demo.model.User;
+import com.example.demo.repository.PipelineRepository;
 import com.example.demo.service.AccountService;
+import com.example.demo.service.PipelineService;
+import com.example.demo.service.StatusService;
 import com.example.demo.service.UserService;
 
 @SpringBootApplication
@@ -22,7 +28,12 @@ public class DemoApplication {
 
 
 	@Bean
-	CommandLineRunner run (UserService userService, AccountService accountService) {
+	CommandLineRunner run (
+        UserService userService, 
+        AccountService accountService,
+        PipelineService pipelineService,
+        StatusService statusService,
+        PipelineRepository pipelineRepository) {
 		return args -> {
 
         Account account = accountService.createAccount("firstAccount");
@@ -45,6 +56,12 @@ public class DemoApplication {
         userService.addRoleToUser("arnold", "SUPER_ADMIN");
         userService.addRoleToUser("arnold", "ADMIN");
         userService.addRoleToUser("arnold", "USER");
+
+
+        Pipeline pipeline = pipelineService.createDefaultPipeline(account);
+        List<Status> statuses = statusService.createDefaultStatuses(pipeline);
+        pipeline.setStatuses(statuses);
+        pipelineRepository.save(pipeline);
 		};
 	}
 

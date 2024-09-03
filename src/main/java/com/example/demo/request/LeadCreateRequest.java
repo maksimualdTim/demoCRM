@@ -16,4 +16,5 @@ public class LeadCreateRequest {
     private Long pipeline_id;
     private Long status_id;
     private List<CustomFieldCreateRequest> customFields;
+    private List<TagCreateRequest> tags;
 }

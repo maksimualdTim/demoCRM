@@ -1,11 +1,12 @@
 package com.example.demo.service;
 
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.example.demo.model.Account;
 import com.example.demo.model.Pipeline;
-import com.example.demo.model.User;
 import com.example.demo.repository.PipelineRepository;
 
 @Service
@@ -24,5 +25,9 @@ public class PipelineService {
 
     public Pipeline getMainPipeline(Account account) {
         return pipelineRepository.findTopByAccountIdOrderByCreatedAtAsc(account.getId());
+    }
+
+    public List<Pipeline> getAllPipelines(Account account) {
+        return pipelineRepository.findByAccount(account);
     }
 }

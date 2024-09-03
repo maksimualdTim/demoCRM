@@ -1,7 +1,10 @@
 package com.example.demo.response;
 
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.springframework.hateoas.server.core.Relation;
 
@@ -22,6 +25,19 @@ public class LeadResponse {
 
     private List<ContactResponse> contacts;
     private CompanyResponse company;
+    private Set<TagResponse> tags;
 
     private List<CustomFieldResponse> custom_fields_values;
+
+    public List<ContactResponse> getContacts() {
+        if(contacts == null)
+            contacts = new ArrayList<ContactResponse>();
+        return contacts;
+    }
+
+    public Set<TagResponse> getTags() {
+        if(tags == null)
+            tags = new HashSet<TagResponse>();
+        return tags;
+    }
 }

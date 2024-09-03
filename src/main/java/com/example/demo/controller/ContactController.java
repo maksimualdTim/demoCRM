@@ -9,8 +9,10 @@ import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.PagedModel;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import com.example.demo.mapper.ContactMapper;
+import com.example.demo.mapper.LeadMapper;
 import com.example.demo.model.Contact;
-import com.example.demo.model.User;
 import com.example.demo.request.ContactCreateRequest;
 import com.example.demo.response.ContactResponse;
 import com.example.demo.service.ContactService;
@@ -25,10 +27,10 @@ import java.util.Optional;
 public class ContactController {
 
     @Autowired
-    private ContactService contactService;
-
+    private ContactMapper contactMapper;
+    
     @Autowired
-    UserService userService;
+    private ContactService contactService;
 
     @GetMapping
     public ResponseEntity<PagedModel<EntityModel<ContactResponse>>> getAllContactsByAccount(
@@ -39,9 +41,7 @@ public class ContactController {
             pageable = PageRequest.of(pageable.getPageNumber(), 250, pageable.getSort());
         }
 
-        User user = userService.getCurrentUser();
-
-        Page<ContactResponse> contacts = contactService.getAllContactsByAccount(user.getAccount().getId(), pageable);
+        Page<ContactResponse> contacts = contactService.getAllContactsForCurrentUser(pageable);
         return ResponseEntity.ok(assembler.toModel(contacts));
     }
 
@@ -50,7 +50,7 @@ public class ContactController {
         Optional<Contact> contactOptional = contactService.getContactById(id);
         if(contactOptional.isPresent()) {
             Contact contact = contactOptional.get();
-            return ResponseEntity.ok(contactService.toContactResponse(contact));
+            return ResponseEntity.ok(contactMapper.toBasicResponse(contact));
         }
 
         return ResponseEntity.notFound().build();
@@ -58,7 +58,7 @@ public class ContactController {
 
     @PostMapping
     public ResponseEntity<ContactResponse> createContact(@Valid @RequestBody ContactCreateRequest contactDto) {
-        Contact contact = contactService.toContact(contactDto);
+        Contact contact = contactMapper.toModel(contactDto);
         Contact createdContact = contactService.createContact(contact);
         return ResponseEntity.ok(contactService.toContactResponse(createdContact));
     }

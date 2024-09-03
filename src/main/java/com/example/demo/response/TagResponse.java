@@ -5,7 +5,8 @@ import org.springframework.hateoas.server.core.Relation;
 import lombok.Data;
 
 @Data
-@Relation(collectionRelation = "pipelines")
-public class PipelineResponse {
-
+@Relation(collectionRelation = "tags")
+public class TagResponse {
+    private Long id;
+    private String name;
 }

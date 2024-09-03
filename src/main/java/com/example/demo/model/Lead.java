@@ -1,7 +1,7 @@
 package com.example.demo.model;
 
 import java.util.Date;
-
+import java.util.HashSet;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
@@ -25,8 +25,8 @@ import jakarta.persistence.Temporal;
 import jakarta.persistence.TemporalType;
 import lombok.Data;
 
-import java.util.Set;
 import java.util.List;
+import java.util.Set;
 
 @Entity
 @Table(name = "leads")
@@ -61,6 +61,15 @@ public class Lead {
     )
     @JsonManagedReference
     private List<Contact> contacts;
+
+    @ManyToMany
+    @JoinTable(
+        name = "lead_tag",
+        joinColumns = @JoinColumn(name = "lead_id"),
+        inverseJoinColumns = @JoinColumn(name = "tag_id")
+    )
+    @JsonManagedReference
+    private Set<Tag> tags = new HashSet<>();
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "responsible_id")
