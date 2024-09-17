@@ -25,7 +25,7 @@ public class LeadResponse {
 
     private List<ContactResponse> contacts;
     private CompanyResponse company;
-    private Set<TagResponse> tags;
+    private List<TagResponse> tags;
 
     private List<CustomFieldResponse> custom_fields_values;
 
@@ -35,9 +35,9 @@ public class LeadResponse {
         return contacts;
     }
 
-    public Set<TagResponse> getTags() {
+    public List<TagResponse> getTags() {
         if(tags == null)
-            tags = new HashSet<TagResponse>();
+            tags = new ArrayList<TagResponse>();
         return tags;
     }
 }

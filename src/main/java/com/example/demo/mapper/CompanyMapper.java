@@ -1,5 +1,6 @@
 package com.example.demo.mapper;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -43,6 +44,7 @@ public class CompanyMapper implements EntityMapper<Company, CompanyResponse, Com
 
     @Override
     public List<CompanyResponse> toBasicResponse(List<Company> companies) {
+        if(companies == null || companies.isEmpty()) return Collections.emptyList();
         return companies.stream().map((company) -> {return this.toBasicResponse(company);}).collect(Collectors.toList());
     }
 

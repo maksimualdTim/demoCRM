@@ -11,12 +11,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import com.example.demo.mapper.ContactMapper;
-import com.example.demo.mapper.LeadMapper;
 import com.example.demo.model.Contact;
 import com.example.demo.request.ContactCreateRequest;
 import com.example.demo.response.ContactResponse;
 import com.example.demo.service.ContactService;
-import com.example.demo.service.UserService;
 
 import jakarta.validation.Valid;
 
@@ -25,9 +23,6 @@ import java.util.Optional;
 @RestController
 @RequestMapping("/api/contacts")
 public class ContactController {
-
-    @Autowired
-    private ContactMapper contactMapper;
     
     @Autowired
     private ContactService contactService;
@@ -50,7 +45,7 @@ public class ContactController {
         Optional<Contact> contactOptional = contactService.getContactById(id);
         if(contactOptional.isPresent()) {
             Contact contact = contactOptional.get();
-            return ResponseEntity.ok(contactMapper.toBasicResponse(contact));
+            return ResponseEntity.ok(contactService.toContactResponse(contact));
         }
 
         return ResponseEntity.notFound().build();
@@ -58,8 +53,7 @@ public class ContactController {
 
     @PostMapping
     public ResponseEntity<ContactResponse> createContact(@Valid @RequestBody ContactCreateRequest contactDto) {
-        Contact contact = contactMapper.toModel(contactDto);
-        Contact createdContact = contactService.createContact(contact);
+        Contact createdContact = contactService.createContact(contactDto);
         return ResponseEntity.ok(contactService.toContactResponse(createdContact));
     }
 

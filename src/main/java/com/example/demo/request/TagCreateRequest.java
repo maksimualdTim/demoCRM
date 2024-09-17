@@ -1,10 +1,17 @@
 package com.example.demo.request;
 
-import jakarta.validation.constraints.NotBlank;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import lombok.Data;
 
 @Data
 public class TagCreateRequest {
-    @NotBlank
     private String name;
+
+    private Long id;
+
+    @JsonIgnore
+    private String entityType;
+    @JsonIgnore
+    private Long entityId;
 }

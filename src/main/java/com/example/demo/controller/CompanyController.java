@@ -25,8 +25,6 @@ public class CompanyController {
     @Autowired
     private CompanyService companyService;
 
-    @Autowired
-    private CompanyMapper companyMapper;
 
     @GetMapping
     public ResponseEntity<PagedModel<EntityModel<CompanyResponse>>> getAllCompaniesByAccount(
@@ -53,8 +51,7 @@ public class CompanyController {
 
     @PostMapping
     public ResponseEntity<CompanyResponse> createCompany(@RequestBody CompanyCreateRequest companyDto) {
-        Company company = companyMapper.toModel(companyDto);
-        Company createdCompany = companyService.createCompany(company);
+        Company createdCompany = companyService.createCompany(companyDto);
         return ResponseEntity.ok(companyService.toCompanyResponse(createdCompany));
     }
 

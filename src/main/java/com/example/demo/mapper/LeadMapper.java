@@ -1,5 +1,6 @@
 package com.example.demo.mapper;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -62,6 +63,7 @@ public class LeadMapper implements EntityMapper<Lead, LeadResponse, LeadCreateRe
 
     @Override
     public List<LeadResponse> toBasicResponse(List<Lead> leads)  {
+        if(leads == null || leads.isEmpty()) return Collections.emptyList();
         return leads.stream().map((lead) -> {return this.toBasicResponse(lead);}).collect(Collectors.toList());
     }
 

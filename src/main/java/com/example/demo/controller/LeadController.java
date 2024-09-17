@@ -53,7 +53,7 @@ public class LeadController {
 
     @PostMapping
     public ResponseEntity<EntityModel<LeadResponse>> createLead(@Valid @RequestBody LeadCreateRequest leadCreateRequest) {
-        Lead lead = leadService.createLeadFromLeadRequest(leadCreateRequest);
+        Lead lead = leadService.createLead(leadCreateRequest);
 
         // Создание EntityModel для возвращаемого объекта Lead
         EntityModel<LeadResponse> leadResource = EntityModel.of(leadService.toLeadResponse(lead));

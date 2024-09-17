@@ -24,6 +24,7 @@ public class CompanyResponse {
     private Long responsible_id;
     @JsonInclude(Include.NON_NULL)
     private List<LeadResponse> leads; 
+    private List<TagResponse> tags;
     private Date created_at;
     private Date updated_at;
     private List<CustomFieldResponse> custom_fields_values;
@@ -35,5 +36,11 @@ public class CompanyResponse {
             return leads;
         }
         return null;
+    }
+
+    public List<TagResponse> getTags() {
+        if(tags == null)
+            tags = new ArrayList<TagResponse>();
+        return tags;
     }
 }

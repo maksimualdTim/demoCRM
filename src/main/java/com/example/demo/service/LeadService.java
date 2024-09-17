@@ -9,30 +9,27 @@ import org.springframework.transaction.annotation.Transactional;
 import com.example.demo.mapper.CompanyMapper;
 import com.example.demo.mapper.ContactMapper;
 import com.example.demo.mapper.LeadMapper;
+import com.example.demo.mapper.TagMapper;
 import com.example.demo.model.Company;
 import com.example.demo.model.Contact;
 import com.example.demo.model.Lead;
 import com.example.demo.model.Pipeline;
 import com.example.demo.model.Tag;
-import com.example.demo.model.User;
 import com.example.demo.repository.CompanyRepository;
 import com.example.demo.repository.ContactRepository;
 import com.example.demo.repository.LeadRepository;
-import com.example.demo.repository.TagRespository;
 import com.example.demo.request.ContactCreateRequest;
 import com.example.demo.request.LeadCreateRequest;
 import com.example.demo.request.TagCreateRequest;
 import com.example.demo.response.CompanyResponse;
 import com.example.demo.response.ContactResponse;
-import com.example.demo.response.CustomFieldResponse;
 import com.example.demo.response.LeadResponse;
 
 import java.util.Optional;
-import java.util.Set;
 import java.util.List;
+import java.util.Map;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.stream.Collectors;
 
 @Service
@@ -60,12 +57,6 @@ public class LeadService {
     private CompanyRepository companyRepository;
 
     @Autowired
-    private TagRespository tagRespository;
-
-    @Autowired
-    private TagService tagService;
-
-    @Autowired
     private LeadMapper leadMapper;
 
     @Autowired
@@ -73,6 +64,12 @@ public class LeadService {
 
     @Autowired
     private CompanyMapper companyMapper;
+
+    @Autowired
+    private TagMapper tagMapper;
+
+    @Autowired
+    private TagService tagService;
 
     public Page<LeadResponse> getAllLeadsForCurrentUser(Pageable pageable) {
         Page<Lead> leads = leadRepository.findByAccountId(userService.getCurrentUser().getAccount().getId(), pageable);
@@ -97,7 +94,6 @@ public class LeadService {
         }
 
         //TODO move to proper services
-        // TODO fix contacts & companies not link leads
         if(lead.getCompany() != null) {
             
             Company company = lead.getCompany();
@@ -130,7 +126,7 @@ public class LeadService {
         leadRepository.deleteById(id);
     }
 
-    public Lead createLeadFromLeadRequest(LeadCreateRequest leadDto) {
+    public Lead createLead(LeadCreateRequest leadDto) {
         Lead lead = leadMapper.toModel(leadDto);
 
         if(leadDto.getCompany() != null) {
@@ -143,21 +139,18 @@ public class LeadService {
             lead.setContacts(contactService.saveAllContacts(contacts.stream().map(contactMapper::toModel).collect(Collectors.toList())));
         }
 
-        // if(leadDto.getTags() != null) {
-        //     Set<Tag> tags = new HashSet<>();
-        //     for (TagCreateRequest tagRequest : leadDto.getTags()) {
-        //         Tag tag = tagRespository.findByNameAndAccount(tagRequest.getName(), user.getAccount()).orElseGet(() -> {
-        //             Tag newTag = new Tag();
-        //             newTag.setName(tagRequest.getName());
-        //             newTag.setAccount(user.getAccount());
-        //             return tagRespository.save(newTag);
-        //         });
-        //         tags.add(tag);
-        //     }
-        //     lead.setTags(tags);
-        // }
+        lead = createLead(lead);
 
-        return createLead(lead);
+        if(leadDto.getTags() != null) {
+            List<TagCreateRequest> tagsCreate = leadDto.getTags();
+            List<Tag> tags = tagsCreate.stream().map(tagMapper::toModel).collect(Collectors.toList());
+            
+            tags = tagService.saveTags(tags);
+
+            tagService.linkTags(tags, lead.getId(), "leads");
+        }
+
+        return lead;
     }
 
     // public LeadResponse toLeadResponse(Lead lead) {
@@ -205,15 +198,45 @@ public class LeadService {
     public LeadResponse toLeadResponse (Lead lead) {
         LeadResponse leadResponse = leadMapper.toBasicResponse(lead);
 
-        List<ContactResponse> contacts = contactMapper.toBasicResponse(lead.getContacts());
-        CompanyResponse company = companyMapper.toBasicResponse(lead.getCompany());
-        company.setShowLeads(false);
-        contacts = contacts.stream()
-            .peek(contact -> contact.setShowLeads(false))
-            .collect(Collectors.toList());
+        Company company = lead.getCompany();
+        if(company != null) {
+            CompanyResponse companyResponse = companyMapper.toBasicResponse(company);
+            companyResponse.setShowLeads(false);
+            List<Tag> tagsCompany = tagService.getTags(company.getId(), "company");
+    
+            if(!tagsCompany.isEmpty()) {
+                companyResponse.setTags(tagMapper.toBasicResponse(tagsCompany));
+            }
 
-        leadResponse.setContacts(contacts);
-        leadResponse.setCompany(company);
+            leadResponse.setCompany(companyResponse);
+        }
+
+        List<Contact> contacts = lead.getContacts();
+
+        if(!contacts.isEmpty()) {
+            List<ContactResponse> contactResponses = contactMapper.toBasicResponse(contacts);
+
+            List<Long> contactIds = contacts.stream()
+            .map(Contact::getId)
+            .collect(Collectors.toList());
+            
+            Map<Long, List<Tag>> contactTagsMap = tagService.getTags(contactIds, "contacts");
+
+            contactResponses.forEach(contactResponse -> {
+                Long contactId = contactResponse.getId();
+                List<Tag> tags = contactTagsMap.getOrDefault(contactId, Collections.emptyList());
+                contactResponse.setTags(tagMapper.toBasicResponse(tags));
+                contactResponse.setShowLeads(false);
+            });
+
+            leadResponse.setContacts(contactResponses);
+        }
+
+
+        List<Tag> tags = tagService.getTags(lead.getId(), "leads");
+        if(!tags.isEmpty()) {
+            leadResponse.setTags(tagMapper.toBasicResponse(tags));
+        }
 
         return leadResponse;
     }

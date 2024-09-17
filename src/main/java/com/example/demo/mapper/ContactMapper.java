@@ -1,5 +1,6 @@
 package com.example.demo.mapper;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -49,6 +50,7 @@ public class ContactMapper implements EntityMapper<Contact, ContactResponse, Con
 
     @Override
     public List<ContactResponse> toBasicResponse(List<Contact> contacts) {
+        if(contacts == null || contacts.isEmpty()) return Collections.emptyList();
         return contacts.stream().map((contact) -> {return this.toBasicResponse(contact);}).collect(Collectors.toList());
     }
 
